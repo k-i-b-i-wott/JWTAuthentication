@@ -39,47 +39,46 @@ app.post('/users/login', async (req, res) => {
     try {
         // Read the email and password from the request body
         const { email, password } = req.body;
+        
 
         // Find the user by email
         const user = await client.user.findFirst({
             where: {
                 email,
             },
-            
+           
         });
-        //check if the user exists
-        if(!user) {
+        
             
+        
+        // //check if the user exists
+        if(!user) {
+            // // if not, return an error
             res.status(404).json({ message: 'Wrong Email address or password' });
             return;
         }
 
 
+        //  // if the user exists, compare the password with the hashed password in the database
 
-        // if not, return an error
+        const isMatch = await bcrypt.compare(password, user.password);     
 
-         // if the user exists, compare the password with the hashed password in the database
-
-        const isMatch=bcrypt.compare(password, user.password,(err,result)=>{
-            
-        // if the password does not match, return an error
-            if(!isMatch){
-                res.status(404).json({ message: 'Wrong Email address or password' });
-                return;
-            } 
-             //if they match,generate token and save it their and sen the address to the user
-             const payload = {
-                id: user.id,
-                email: user.email,
-            };
-            const token =jwt.sign(payload, process.env.JWT_SECRET_KEY);  
-            res.status(200).cookie("authToken", token,{}).json({
-                message: 'Login successful',
-                status:"Success",
-                data: user,
-                
-            });
-
+        // // if the password does not match, return an error
+        if (!isMatch) {
+            res.status(401).json({ message: 'Wrong Email address or password' });
+            return;
+        }
+        // // if the password matches, create a JWT token and send it to the client
+        const  payload = {
+            id: user.id,
+            email: user.email,
+        };
+        const token = jwt.sign(payload,process.env.JWT_SECRET_KEY);
+        res.status(200).cookie('token', token, {}).json({
+            message: 'Login successful',
+            status:"Success",
+            token: token,
+            data: user,
         })
     }catch (error) {
         res.status(500).json({ 
