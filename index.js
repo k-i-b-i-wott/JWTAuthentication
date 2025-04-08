@@ -87,24 +87,33 @@ app.post("/users/login", async (req, res) => {
 });
 
 app.post("/posts", verifyUser, async (req, res) => {
-    
+  const { title, body } = req.body;  
   
-  try {   
-         const { title, body } = req.body;   
-         const post =await client.post.create({
-            data: {
-                title,
-                body,
-                userId: req.user.id,
-            },
-        });
+  try {    
+    const post = await client.post.create({
+      data: {
+        title,
+        body,
+        user: {
+          connect: {
+            id: req.user.id,
+          },
+        },   
+      },
+      select: {
+        id: true,
+        title: true,
+        body: true,
+        user: true,
+      },
+    });
     res.status(200).json({
       message: "Post created successfully",
       status: "Success",
       data: post,
-    });
-
+    });     
   }catch (error) {
+    console.error(error);
     res.status(500).json({
       message: "Error creating the post",
       status: "Error",
